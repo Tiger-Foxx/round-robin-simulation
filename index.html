@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Simulation Interactive SD-WAN • Équilibrage de Charge WAN</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts for icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"/>
+  <style>
+    html, body { height: 100%; }
+    .wan-link { transition: filter 0.3s, opacity 0.3s; }
+    .wan-link.active { filter: drop-shadow(0px 0px 8px #fff) brightness(1.3); opacity: 1; }
+    .packet { transition: transform 0.5s linear; }
+    .stat-bar { transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col">
+
+  <header class="bg-blue-900 text-white py-5 px-4 shadow flex justify-between items-center">
+    <div class="flex gap-2 items-center">
+      <span class="material-icons text-4xl">hub</span>
+      <h1 class="text-2xl font-bold tracking-wide">Simulation Interactive — <span class="text-yellow-300">SD-WAN</span> <span class="text-blue-200">WAN Load Balancing</span></h1>
+    </div>
+    <a href="#" onclick="openHelp()" class="underline hover:text-yellow-400">Aide & Explication</a>
+  </header>
+
+  <main class="flex-1 flex flex-col md:flex-row px-2 py-4 gap-4 max-w-7xl mx-auto w-full">
+    <!-- PARAMÈTRES -->
+    <section class="bg-white rounded-xl shadow p-4 w-full md:w-1/3 max-w-md flex flex-col gap-4 border border-slate-200">
+      <h2 class="text-lg font-semibold mb-2 text-blue-900 flex items-center gap-2"><span class="material-icons text-blue-700">tune</span> Paramètres Simulation</h2>
+      <form id="paramForm" class="flex flex-col gap-3">
+        <div>
+          <label>Nombre de succursales :</label>
+          <input type="number" id="siteCount" min="2" max="4" value="2" class="input input-bordered w-20 ml-2 border rounded px-2 py-1"/>
+        </div>
+        <div>
+          <label>Hôtes par succursale :</label>
+          <input type="number" id="hostsPerSite" min="2" max="5" value="3" class="input input-bordered w-20 ml-2 border rounded px-2 py-1"/>
+        </div>
+        <div>
+          <label>Nombre de liens WAN :</label>
+          <input type="number" id="wanCount" min="2" max="4" value="3" class="input input-bordered w-20 ml-2 border rounded px-2 py-1"/>
+        </div>
+        <div>
+          <label>Type d’équilibrage :</label>
+          <select id="algoType" class="input input-bordered border rounded px-2 py-1 ml-2">
+            <option value="rr">Round Robin</option>
+            <option value="wrr">Round Robin Pondéré</option>
+          </select>
+        </div>
+        <div id="wanParams" class="flex flex-col gap-1"></div>
+        <div>
+          <label>Vitesse d’envoi (paquets/sec) :</label>
+          <input type="range" id="speed" min="1" max="10" value="3" class="w-40 ml-2 align-middle"/>
+          <span id="speedLabel" class="ml-1 font-semibold text-blue-800">3</span>
+        </div>
+        <div>
+          <label>Nombre de paquets :</label>
+          <input type="number" id="packetTotal" min="10" max="200" value="40" class="input input-bordered w-20 ml-2 border rounded px-2 py-1"/>
+        </div>
+      </form>
+      <div class="flex gap-2">
+        <button id="startBtn" class="bg-green-600 hover:bg-green-700 text-white rounded-lg px-4 py-2 font-bold w-1/2 transition">Démarrer</button>
+        <button id="stopBtn" class="bg-red-500 hover:bg-red-600 text-white rounded-lg px-4 py-2 font-bold w-1/2 transition" disabled>Arrêter</button>
+      </div>
+      <div id="alert" class="hidden text-center rounded p-2 bg-yellow-100 text-yellow-800 font-bold"></div>
+    </section>
+
+    <!-- VISUALISATION RESEAU -->
+    <section class="flex-1 bg-white rounded-xl shadow p-2 md:p-6 flex flex-col items-center justify-center border border-slate-200">
+      <h2 class="text-lg font-semibold mb-2 text-blue-900 flex items-center gap-2"><span class="material-icons text-blue-700">schema</span> Schéma réseau SD-WAN</h2>
+      <svg id="networkSVG" class="w-full max-w-2xl h-[350px] md:h-[420px] bg-slate-100 rounded shadow-inner mb-2" tabindex="0"></svg>
+      <div class="text-xs text-slate-600">Cliquez sur les liens WAN pour voir leurs paramètres</div>
+    </section>
+
+    <!-- STATISTIQUES -->
+    <section class="bg-white rounded-xl shadow p-4 w-full md:w-1/3 max-w-md flex flex-col gap-3 border border-slate-200">
+      <h2 class="text-lg font-semibold mb-2 text-blue-900 flex items-center gap-2"><span class="material-icons text-blue-700">bar_chart</span> Statistiques</h2>
+      <div id="stats" class="flex flex-col gap-2"></div>
+      <canvas id="statsPie" width="240" height="180" class="mx-auto"></canvas>
+      <canvas id="statsBar" width="260" height="120" class="mx-auto"></canvas>
+      <div id="statMsg" class="mt-2 text-center"></div>
+    </section>
+  </main>
+
+  <!-- EXPICATION PEDAGOGIQUE -->
+  <div id="helpModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white max-w-lg rounded-xl shadow-lg p-7 relative">
+      <button onclick="closeHelp()" class="absolute top-2 right-2 text-slate-500 hover:text-red-500">
+        <span class="material-icons">close</span>
+      </button>
+      <h3 class="text-xl font-bold mb-2 text-blue-900">Équilibrage de Charge SD-WAN <span class="text-blue-600">vs</span> Load Balancing Classique</h3>
+      <div class="text-slate-700">
+        <p>
+          <strong>SD-WAN WAN Load Balancing</strong> : Ici, on répartit le <u>trafic réseau sortant</u> d'une entreprise sur plusieurs liaisons WAN hétérogènes (ex : MPLS, Fibre, 4G, Internet). L'objectif est d'<b>optimiser l'utilisation des liens physiques</b> : plus de bande passante, moins de congestion, tolérance aux pannes, économies.<br/>
+          <span class="text-blue-700 font-semibold">— C'est le WAN qu'on équilibre, pas des serveurs ou services.</span>
+        </p>
+        <ul class="list-disc list-inside my-2">
+          <li>Chaque paquet peut partir sur un lien différent, selon un algorithme (RR, pondéré, etc.)</li>
+          <li>Visuellement, on voit chaque lien WAN utilisé dans la proportion voulue</li>
+          <li>Algorithmes : Round Robin simple (tour à tour), Round Robin pondéré (liens plus ou moins utilisés selon leur poids/capacité)</li>
+        </ul>
+        <p>
+          <strong>Load Balancing Classique</strong> : On répartit les <u>requêtes</u> (ex : HTTP) entre <b>plusieurs serveurs</b> pour augmenter la capacité d'un service web.<br/>
+          <span class="text-pink-700 font-semibold">Ici, ce n'est pas le sujet ! On équilibre le réseau physique, pas les serveurs.</span>
+        </p>
+        <div class="mt-2 text-xs text-slate-500">Simulation réalisée pour l'enseignement, faite pour illustrer la logique d'équilibrage de charge WAN en SD-WAN.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="text-center text-xs text-slate-500 py-3 mt-4">
+    © 2025 Simulation SD-WAN WAN Load Balancing | Démo IA | theTigerFox
+  </footer>
+
+  <script>
+    // Paramètres par défaut pour les liens WAN
+    const WAN_PRESETS = [
+      { label: 'MPLS', color: "#2E8B57", bw: 20, lat: 5, loss: 0, weight: 3 },
+      { label: 'Fibre', color: "#4169E1", bw: 100, lat: 10, loss: 0.1, weight: 2 },
+      { label: '4G', color: "#FF6347", bw: 10, lat: 50, loss: 2, weight: 1 },
+      { label: 'Internet', color: "#FFD700", bw: 30, lat: 25, loss: 1, weight: 1 }
+    ];
+
+    // État simulation
+    let params = {
+      siteCount: 2,
+      hostsPerSite: 3,
+      wanCount: 3,
+      algo: "rr",
+      wan: [],
+      speed: 3,
+      packetTotal: 40
+    };
+    let simulation = {
+      running: false,
+      packets: [],
+      perWanCount: [],
+      nextWan: 0,
+      wanRR: [],
+      sentCount: 0,
+      timer: null,
+      stats: []
+    };
+
+    // Initialisation UI
+    document.addEventListener('DOMContentLoaded', () => {
+      // Générer les champs WAN
+      renderWanParams();
+      document.getElementById('siteCount').addEventListener('input', e => { params.siteCount = +e.target.value; drawNetwork(); });
+      document.getElementById('hostsPerSite').addEventListener('input', e => { params.hostsPerSite = +e.target.value; drawNetwork(); });
+      document.getElementById('wanCount').addEventListener('input', e => { params.wanCount = +e.target.value; renderWanParams(); drawNetwork(); });
+      document.getElementById('algoType').addEventListener('change', e => { params.algo = e.target.value; renderWanParams(); });
+      document.getElementById('speed').addEventListener('input', e => { params.speed = +e.target.value; document.getElementById('speedLabel').textContent = e.target.value; });
+      document.getElementById('packetTotal').addEventListener('input', e => { params.packetTotal = +e.target.value; });
+
+      document.getElementById('startBtn').onclick = startSimulation;
+      document.getElementById('stopBtn').onclick = stopSimulation;
+
+      drawNetwork();
+      updateStats();
+    });
+
+    function renderWanParams() {
+      params.wan = [];
+      const wanDiv = document.getElementById('wanParams');
+      wanDiv.innerHTML = '';
+      let wanCount = +document.getElementById('wanCount').value;
+      for(let i=0; i<wanCount; i++) {
+        let preset = WAN_PRESETS[i] || WAN_PRESETS[0];
+        params.wan[i] = {...preset};
+        let colorId = `wanColor${i}`;
+        let weightId = `wanWeight${i}`;
+        let bwId = `wanBW${i}`;
+        let latId = `wanLat${i}`;
+        let lossId = `wanLoss${i}`;
+        let block = document.createElement('div');
+        block.className = "flex items-center gap-2";
+        block.innerHTML = `
+          <label>Lien <b>${String.fromCharCode(65+i)}</b>:</label>
+          <input type="color" id="${colorId}" value="${preset.color}" class="w-6 h-6 border-none"/>
+          <input type="text" value="${preset.label||'WAN'}" readonly class="w-14 bg-slate-100 rounded px-1 text-center"/>
+          <label class="text-xs ml-1">BP</label><input type="number" id="${bwId}" value="${preset.bw}" min="1" max="1000" class="w-12 px-1 rounded border text-xs"/>
+          <span class="text-xs">Mbps</span>
+          <label class="text-xs ml-1">Lat</label><input type="number" id="${latId}" value="${preset.lat}" min="1" max="200" class="w-10 px-1 rounded border text-xs"/>
+          <span class="text-xs">ms</span>
+          <label class="text-xs ml-1">Perte</label><input type="number" id="${lossId}" value="${preset.loss}" min="0" max="50" step="0.1" class="w-10 px-1 rounded border text-xs"/>
+          <span class="text-xs">%</span>
+          <label class="ml-2 text-xs">Poids</label>
+          <input type="number" id="${weightId}" value="${preset.weight}" min="1" max="10" class="w-8 px-1 rounded border text-xs"/>
+        `;
+        wanDiv.appendChild(block);
+
+        // Listeners pour mise à jour params
+        document.getElementById(colorId).addEventListener('input', e => { params.wan[i].color = e.target.value; drawNetwork(); });
+        document.getElementById(weightId).addEventListener('input', e => { params.wan[i].weight = +e.target.value; });
+        document.getElementById(bwId).addEventListener('input', e => { params.wan[i].bw = +e.target.value; });
+        document.getElementById(latId).addEventListener('input', e => { params.wan[i].lat = +e.target.value; });
+        document.getElementById(lossId).addEventListener('input', e => { params.wan[i].loss = +e.target.value; });
+      }
+    }
+
+    // Affichage du schéma réseau SVG
+    function drawNetwork() {
+      const svg = document.getElementById('networkSVG');
+      svg.innerHTML = '';
+      const w = svg.clientWidth, h = svg.clientHeight;
+      const marginY = 60, marginX = 70;
+      const siteCols = params.siteCount;
+      const hostsPerSite = params.hostsPerSite;
+      const wanCount = params.wanCount;
+      // Coords des sites
+      let siteCenters = [];
+      for (let i=0; i<siteCols; i++) {
+        siteCenters.push({ x: marginX + i*(w-2*marginX)/(siteCols-1), y: h/2 });
+      }
+      // Hosts et CPE
+      for (let s=0; s<siteCols; s++) {
+        let {x, y} = siteCenters[s];
+        // CPE
+        svg.appendChild(makeSVG('rect',{
+          x: x-15, y: y-25, width: 30, height: 50,
+          rx: 9, fill:'#fff', stroke:'#334155', 'stroke-width': 2, filter:'drop-shadow(0 2px 1px #cbd5e1)'
+        }));
+        svg.appendChild(makeSVG('text',{
+          x: x, y: y+35, 'text-anchor':'middle', fill:'#334155', style:'font-size:14px;font-weight:bold'
+        }, `CPE-${String.fromCharCode(65+s)}`));
+        // Hosts
+        for (let hIdx=0; hIdx<hostsPerSite; hIdx++) {
+          let hx = x-40+80*(hIdx/(hostsPerSite-1||1))-10;
+          let hy = y-55;
+          svg.appendChild(makeSVG('circle',{
+            cx: hx, cy: hy, r: 13, fill:'#F1F5F9', stroke:'#64748B', 'stroke-width':2
+          }));
+          svg.appendChild(makeSVG('text',{
+            x: hx, y: hy+4, 'text-anchor':'middle', fill:'#334155', style:'font-size:11px'
+          }, `PC${hIdx+1}`));
+          // Lien host->CPE
+          svg.appendChild(makeSVG('line',{
+            x1: hx, y1: hy+13, x2: x, y2: y-25,
+            stroke:'#cbd5e1', 'stroke-width':2
+          }));
+        }
+      }
+      // Liens WAN (entre les CPE)
+      let cpeA = siteCenters[0], cpeB = siteCenters[siteCenters.length-1];
+      const wanGap = 34;
+      for (let i=0; i<wanCount; i++) {
+        let offset = (i-(wanCount-1)/2) * wanGap;
+        let x1 = cpeA.x+15, y1 = cpeA.y+offset;
+        let x2 = cpeB.x-15, y2 = cpeB.y+offset;
+        let path = `M${x1},${y1} C${x1+50},${y1} ${x2-50},${y2} ${x2},${y2}`;
+        let wanColor = params.wan[i]?.color || WAN_PRESETS[i%WAN_PRESETS.length].color;
+        svg.appendChild(makeSVG('path',{
+          d: path, stroke: wanColor, 'stroke-width': 9, fill:'none', 
+          class:'wan-link', id:`wanPath${i}`, opacity:'0.35', tabindex:0,
+          onclick:`showWanParams(${i})`, style:'cursor:pointer'
+        }));
+        // Etiquette
+        svg.appendChild(makeSVG('text',{
+          x: (x1+x2)/2, y: (y1+y2)/2-15, 'text-anchor':'middle',
+          fill:wanColor, style:'font-size:13px;font-weight:bold', pointerEvents:"none"
+        }, params.wan[i]?.label || WAN_PRESETS[i%WAN_PRESETS.length].label));
+      }
+    }
+
+    function makeSVG(tag, attrs, txt) {
+      let el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      for(let k in attrs) el.setAttribute(k, attrs[k]);
+      if(txt) el.textContent = txt;
+      return el;
+    }
+
+    // SIMULATION
+    function startSimulation() {
+      if(simulation.running) return;
+      // Récupérer les paramètres
+      params.siteCount = +document.getElementById('siteCount').value;
+      params.hostsPerSite = +document.getElementById('hostsPerSite').value;
+      params.wanCount = +document.getElementById('wanCount').value;
+      params.algo = document.getElementById('algoType').value;
+      params.speed = +document.getElementById('speed').value;
+      params.packetTotal = +document.getElementById('packetTotal').value;
+      // Préparer état simulation
+      simulation.running = true;
+      simulation.packets = [];
+      simulation.sentCount = 0;
+      simulation.perWanCount = Array(params.wanCount).fill(0);
+      simulation.stats = [];
+      // Préparer le round robin pondéré
+      simulation.wanRR = [];
+      params.wan.forEach((w,i) => {
+        for(let k=0; k<(params.algo==="wrr"?w.weight:1); k++) simulation.wanRR.push(i);
+      });
+      simulation.nextWan = 0;
+      document.getElementById('startBtn').disabled = true;
+      document.getElementById('stopBtn').disabled = false;
+      document.getElementById('alert').classList.add('hidden');
+      drawNetwork();
+      updateStats();
+      runPacketLoop();
+    }
+
+    function stopSimulation() {
+      simulation.running = false;
+      if(simulation.timer) clearTimeout(simulation.timer);
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('stopBtn').disabled = true;
+      drawNetwork();
+      updateStats(true);
+    }
+
+    function runPacketLoop() {
+      if(!simulation.running) return;
+      if(simulation.sentCount >= params.packetTotal) {
+        stopSimulation();
+        return;
+      }
+      // Choisir source/destination et WAN
+      let srcSite = 0, dstSite = params.siteCount-1;
+      let srcHost = Math.floor(Math.random()*params.hostsPerSite);
+      let dstHost = Math.floor(Math.random()*params.hostsPerSite);
+
+      // Algorithme RR (pondéré ou non)
+      let wanIdx = simulation.wanRR[simulation.nextWan % simulation.wanRR.length];
+      simulation.nextWan++;
+      simulation.perWanCount[wanIdx]++;
+      simulation.sentCount++;
+      simulation.stats.push(wanIdx);
+
+      // Animer le paquet
+      animatePacket(srcSite, srcHost, dstSite, dstHost, wanIdx);
+
+      updateStats();
+
+      simulation.timer = setTimeout(runPacketLoop, 1000/params.speed);
+    }
+
+    function animatePacket(srcSite, srcHost, dstSite, dstHost, wanIdx) {
+      const svg = document.getElementById('networkSVG');
+      const w = svg.clientWidth, h = svg.clientHeight;
+      const marginX = 70, hostsPerSite = params.hostsPerSite;
+      // Coords CPEs
+      let cpeA = { x: marginX + 0*(w-2*marginX), y: h/2 };
+      let cpeB = { x: marginX + (params.siteCount-1)*(w-2*marginX)/(params.siteCount-1), y: h/2 };
+      // Coords hosts
+      let srcX = cpeA.x-40+80*(srcHost/(hostsPerSite-1||1))-10;
+      let srcY = cpeA.y-55;
+      let dstX = cpeB.x-40+80*(dstHost/(hostsPerSite-1||1))-10;
+      let dstY = cpeB.y-55;
+      // Coord lien WAN
+      const wanGap = 34;
+      let offset = (wanIdx-(params.wanCount-1)/2) * wanGap;
+      let l1 = { x:cpeA.x+15, y:cpeA.y+offset }, l2 = {x:cpeB.x-15, y:cpeB.y+offset};
+
+      // Animation : host→CPE→WAN→CPE→host
+      // Étape 1 : srcHost→CPE
+      let packet = makeSVG('circle',{ r:7, fill:params.wan[wanIdx].color, class:'packet', opacity:0.95 });
+      svg.appendChild(packet);
+      moveSVG(packet, srcX, srcY);
+      let steps = [
+        [cpeA.x, cpeA.y-25],
+        [l1.x, l1.y],
+        [l2.x, l2.y],
+        [cpeB.x, cpeB.y-25],
+        [dstX, dstY]
+      ];
+      let i=0;
+      function stepAnim() {
+        if(i<steps.length) {
+          moveSVG(packet, steps[i][0], steps[i][1]);
+          // Illuminer le lien WAN utilisé
+          if(i===2) {
+            let wanPath = document.getElementById(`wanPath${wanIdx}`);
+            if(wanPath) wanPath.classList.add('active');
+          }
+          i++;
+          setTimeout(stepAnim, 180);
+        } else {
+          // Retirer l'illumination du lien
+          let wanPath = document.getElementById(`wanPath${wanIdx}`);
+          if(wanPath) wanPath.classList.remove('active');
+          svg.removeChild(packet);
+        }
+      }
+      stepAnim();
+    }
+    function moveSVG(el,x,y) {
+      el.setAttribute('cx',x); el.setAttribute('cy',y);
+    }
+
+    function updateStats(final=false) {
+      let s = simulation;
+      let perWan = s.perWanCount || Array(params.wanCount).fill(0);
+      let total = perWan.reduce((a,b)=>a+b,0)||1;
+      let html = "";
+      for(let i=0; i<perWan.length; i++) {
+        let color = params.wan[i]?.color||WAN_PRESETS[i%WAN_PRESETS.length].color;
+        let label = params.wan[i]?.label||WAN_PRESETS[i%WAN_PRESETS.length].label;
+        let v = perWan[i];
+        let ratio = (v/total*100).toFixed(1);
+        let theo = (params.algo==="wrr" ? params.wan[i].weight : 1)/params.wan.reduce((a,b)=>a+(params.algo==="wrr"?b.weight:1),0)*100;
+        html += `<div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded-full" style="background:${color}"></span>
+            <span class="font-bold text-slate-800">${label}</span>
+            <span class="ml-2 text-xs text-slate-500">(${params.wan[i].bw} Mbps, ${params.wan[i].lat}ms, ${params.wan[i].loss}% perte, poids ${params.wan[i].weight})</span>
+            <span class="ml-auto font-mono">${v} paquets</span>
+            <span class="ml-2 text-xs text-slate-600">(${ratio}% / attendu ${theo.toFixed(1)}%)</span>
+          </div>
+          <div class="w-full h-2 bg-slate-100 rounded stat-bar mb-2">
+            <div class="h-2 rounded bg-gradient-to-r from-white to-[${color}]" style="width:${ratio}%;"></div>
+          </div>`;
+      }
+      document.getElementById('stats').innerHTML = html;
+
+      // Pie Chart
+      let ctxPie = document.getElementById('statsPie').getContext('2d');
+      ctxPie.clearRect(0,0,240,180);
+      let start=0;
+      for(let i=0;i<perWan.length;i++) {
+        let angle = perWan[i]/total*2*Math.PI;
+        ctxPie.beginPath();
+        ctxPie.moveTo(120,90);
+        ctxPie.arc(120,90,65,start,start+angle,false);
+        ctxPie.closePath();
+        ctxPie.fillStyle = params.wan[i]?.color||WAN_PRESETS[i%WAN_PRESETS.length].color;
+        ctxPie.globalAlpha = 0.60;
+        ctxPie.fill();
+        ctxPie.globalAlpha = 1;
+        start+=angle;
+      }
+      // Bar Chart
+      let ctxBar = document.getElementById('statsBar').getContext('2d');
+      ctxBar.clearRect(0,0,260,120);
+      for(let i=0;i<perWan.length;i++) {
+        let v = perWan[i]/total*100;
+        ctxBar.fillStyle = params.wan[i]?.color||WAN_PRESETS[i%WAN_PRESETS.length].color;
+        ctxBar.fillRect(20+i*60, 110-v, 40, v);
+        ctxBar.fillStyle = "#334155";
+        ctxBar.font = "bold 12px sans-serif";
+        ctxBar.fillText(params.wan[i]?.label||WAN_PRESETS[i%WAN_PRESETS.length].label, 22+i*60, 115);
+        ctxBar.fillText(perWan[i], 32+i*60, 110-v-5);
+      }
+
+      // Message stat
+      let ok = true;
+      for(let i=0; i<perWan.length; i++) {
+        let theo = (params.algo==="wrr" ? params.wan[i].weight : 1)/params.wan.reduce((a,b)=>a+(params.algo==="wrr"?b.weight:1),0)*100;
+        let real = perWan[i]/total*100;
+        if(Math.abs(theo-real)>8) ok=false;
+      }
+      document.getElementById('statMsg').innerHTML = final
+        ? (ok ? `<span class="text-green-700 font-bold">✅ Les proportions sont conformes au paramétrage. L'équilibrage fonctionne !</span>`
+               : `<span class="text-orange-700 font-bold">⚠️ Les proportions réelles diffèrent des pondérations. Vérifiez la config ou augmentez le nombre de paquets.</span>`)
+        : "";
+    }
+
+    // AIDE
+    function openHelp() { document.getElementById('helpModal').classList.remove('hidden'); }
+    function closeHelp() { document.getElementById('helpModal').classList.add('hidden'); }
+
+    // WAN Info
+    window.showWanParams = function(i) {
+      let w = params.wan[i];
+      let msg = `Lien ${w.label||('WAN'+(i+1))} — <span class="font-bold" style="color:${w.color}">${w.color}</span><br>
+        BP: <b>${w.bw} Mbps</b>, Latence: <b>${w.lat} ms</b>, Perte: <b>${w.loss}%</b>, Poids: <b>${w.weight}</b>`;
+      let alert = document.getElementById('alert');
+      alert.innerHTML = msg; alert.classList.remove('hidden');
+      setTimeout(()=>{alert.classList.add('hidden');}, 3500);
+    };
+  </script>
+</body>
+</html>
