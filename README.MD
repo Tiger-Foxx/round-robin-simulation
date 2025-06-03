@@ -3,7 +3,7 @@
 Bienvenue dans cette **simulation visuelle et interactive** du concept d’équilibrage de charge dans un réseau SD-WAN (Software Defined WAN), orientée sur la répartition du trafic entre plusieurs liens WAN hétérogènes (MPLS, Fibre, 4G, Internet…).
 
 ---
-
+<img src="cap.png" >
 ## 🚀 Aperçu
 
 Cette application web vous permet de :
