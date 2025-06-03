@@ -3,135 +3,1133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulation SD-WAN: Équilibrage de Charge WAN</title>
+    <title>🎯 Simulation SD-WAN Elite - Équilibrage de Charge WAN</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Animations et effets personnalisés */
+        @keyframes pulse-link {
+            0%, 100% { filter: brightness(1) drop-shadow(0 0 5px currentColor); }
+            50% { filter: brightness(1.5) drop-shadow(0 0 15px currentColor); }
+        }
+        
+        @keyframes packet-glow {
+            0%, 100% { box-shadow: 0 0 5px currentColor; }
+            50% { box-shadow: 0 0 20px currentColor; }
+        }
+        
+        .pulse-animation {
+            animation: pulse-link 0.6s ease-in-out;
+        }
+        
+        .packet-element {
+            animation: packet-glow 1s ease-in-out infinite;
+            border-radius: 50%;
+            position: absolute;
+            z-index: 10;
+        }
+        
+        /* Gradient de fond pour l'effet pro */
+        .bg-gradient-cyber {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        }
+        
+        .bg-gradient-network {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%);
+        }
+        
+        /* Effet glassmorphism */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Scrollbar personnalisée */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        
+        /* Canvas responsif */
+        #networkCanvas {
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Boutons avec effet néon */
+        .btn-neon {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-neon:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-neon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-neon:hover::before {
+            left: 100%;
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans flex flex-col min-h-screen">
 
-    <header class="bg-gray-800 p-4 shadow-lg">
-        <h1 class="text-3xl font-bold text-center text-cyan-400">
-            <i class="fas fa-network-wired mr-2"></i>Simulation SD-WAN: Équilibrage de Charge WAN
-        </h1>
-    </header>
+<body class="bg-gradient-cyber text-gray-100 min-h-screen font-sans overflow-x-hidden">
 
-    <div class="flex-grow flex flex-col lg:flex-row p-4 gap-4">
-        <!-- Colonne des contrôles -->
-        <aside class="lg:w-1/3 bg-gray-800 p-6 rounded-lg shadow-xl space-y-6 overflow-y-auto" style="max-height: calc(100vh - 100px);">
-            <div>
-                <h2 class="text-xl font-semibold text-cyan-400 mb-3 border-b border-gray-700 pb-2">
-                    <i class="fas fa-cogs mr-2"></i>Configuration du Réseau
-                </h2>
-                
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label for="numSites" class="block text-sm font-medium text-gray-300">Nombre de Succursales (2-4):</label>
-                        <select id="numSites" class="mt-1 block w-full bg-gray-700 border-gray-600 text-gray-200 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 p-2">
-                            <option value="2">2</option>
-                            <option value="3" selected>3</option>
-                            <option value="4">4</option>
-                        </select>
+    <!-- Header Premium -->
+    <header class="bg-gradient-network shadow-2xl relative overflow-hidden">
+        <div class="absolute inset-0 bg-black/20"></div>
+        <div class="relative z-10 container mx-auto px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center glass-effect">
+                        <i class="fas fa-network-wired text-2xl text-white"></i>
                     </div>
                     <div>
-                        <label for="numHosts" class="block text-sm font-medium text-gray-300">Hôtes par Succursale (1-5):</label>
-                        <select id="numHosts" class="mt-1 block w-full bg-gray-700 border-gray-600 text-gray-200 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 p-2">
-                            <option value="1">1</option>
-                            <option value="2" selected>2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                        </select>
+                        <h1 class="text-3xl font-bold text-white">Simulation SD-WAN Elite</h1>
+                        <p class="text-blue-200 text-sm">Équilibrage de Charge WAN Professionnel</p>
                     </div>
                 </div>
-                <button id="applyNetworkConfig" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out">
-                    <i class="fas fa-sync-alt mr-2"></i>Appliquer Configuration Réseau
+                <button id="helpBtn" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg glass-effect transition-all duration-300">
+                    <i class="fas fa-question-circle mr-2"></i>Guide
                 </button>
             </div>
+        </div>
+    </header>
 
-            <div id="wanLinksConfigContainer" class="space-y-3">
-                <h3 class="text-lg font-semibold text-cyan-400 mt-4 border-b border-gray-700 pb-2">
-                    <i class="fas fa-route mr-2"></i>Configuration des Liens WAN
-                </h3>
-                <!-- Les liens WAN seront ajoutés ici par JS -->
-            </div>
-             <button id="addWanLink" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out mt-2">
-                <i class="fas fa-plus-circle mr-2"></i>Ajouter un Lien WAN
-            </button>
+    <!-- Conteneur principal -->
+    <div class="container mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            
+            <!-- Panneau de Configuration Premium -->
+            <div class="xl:col-span-1 space-y-6">
+                
+                <!-- Configuration Réseau -->
+                <div class="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-2xl p-6 border border-slate-700/50">
+                    <h2 class="text-xl font-bold mb-4 text-cyan-400 flex items-center">
+                        <i class="fas fa-cogs mr-3"></i>Configuration Réseau
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Succursales connectées</label>
+                            <select id="sitesCount" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                                <option value="2">2 Sites</option>
+                                <option value="3" selected>3 Sites</option>
+                                <option value="4">4 Sites</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Hôtes par site</label>
+                            <select id="hostsCount" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                                <option value="2">2 Hôtes</option>
+                                <option value="3" selected>3 Hôtes</option>
+                                <option value="4">4 Hôtes</option>
+                                <option value="5">5 Hôtes</option>
+                            </select>
+                        </div>
+                        
+                        <button id="applyNetworkBtn" class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-2 px-4 rounded-lg btn-neon">
+                            <i class="fas fa-sync-alt mr-2"></i>Appliquer
+                        </button>
+                    </div>
+                </div>
 
-
-            <div>
-                <h2 class="text-xl font-semibold text-cyan-400 mb-3 mt-6 border-b border-gray-700 pb-2">
-                    <i class="fas fa-sliders-h mr-2"></i>Paramètres de Simulation
-                </h2>
-                <div class="mb-4">
-                    <label for="algorithm" class="block text-sm font-medium text-gray-300">Algorithme d'équilibrage:</label>
-                    <select id="algorithm" class="mt-1 block w-full bg-gray-700 border-gray-600 text-gray-200 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 p-2">
-                        <option value="round-robin">Round Robin Simple</option>
-                        <option value="weighted-round-robin">Round Robin Pondéré</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label for="packetRate" class="block text-sm font-medium text-gray-300">Paquets par seconde (rythme): <span id="packetRateValue">5</span></label>
-                    <input type="range" id="packetRate" min="1" max="20" value="5" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-cyan-500">
-                </div>
-                <div class="mb-4">
-                    <label for="totalPackets" class="block text-sm font-medium text-gray-300">Nombre total de paquets (0 pour infini):</label>
-                    <input type="number" id="totalPackets" value="100" min="0" class="mt-1 block w-full bg-gray-700 border-gray-600 text-gray-200 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 p-2">
-                </div>
-                <div class="mb-4">
-                    <label for="animationSpeed" class="block text-sm font-medium text-gray-300">Vitesse d'animation: <span id="animationSpeedValue">50</span></label>
-                    <input type="range" id="animationSpeed" min="10" max="200" value="50" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-cyan-500">
-                </div>
-
-                <div class="flex gap-4">
-                    <button id="startButton" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out">
-                        <i class="fas fa-play mr-2"></i>Démarrer
+                <!-- Configuration WAN Premium -->
+                <div class="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-2xl p-6 border border-slate-700/50">
+                    <h2 class="text-xl font-bold mb-4 text-orange-400 flex items-center">
+                        <i class="fas fa-route mr-3"></i>Liens WAN
+                    </h2>
+                    
+                    <div id="wanLinksContainer" class="space-y-3 mb-4 max-h-64 overflow-y-auto">
+                        <!-- Liens WAN générés dynamiquement -->
+                    </div>
+                    
+                    <button id="addWanLinkBtn" class="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-2 px-4 rounded-lg btn-neon">
+                        <i class="fas fa-plus-circle mr-2"></i>Ajouter un Lien
                     </button>
-                    <button id="stopButton" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out" disabled>
-                        <i class="fas fa-stop mr-2"></i>Arrêter
-                    </button>
                 </div>
-            </div>
-        </aside>
 
-        <!-- Zone de Simulation et Statistiques -->
-        <main class="lg:w-2/3 flex flex-col gap-4">
-            <div class="flex-grow bg-gray-800 p-2 rounded-lg shadow-xl relative" id="simulationAreaContainer">
-                 <canvas id="simulationCanvas" class="bg-gray-800 rounded-md"></canvas>
-            </div>
-            <div class="bg-gray-800 p-6 rounded-lg shadow-xl h-auto lg:h-64" id="statsArea">
-                <h2 class="text-xl font-semibold text-cyan-400 mb-3 border-b border-gray-700 pb-2">
-                    <i class="fas fa-chart-bar mr-2"></i>Statistiques de Répartition
-                </h2>
-                <div id="statsContent" class="text-sm space-y-2 overflow-y-auto" style="max-height: 200px;">
-                    <p class="text-gray-400">La simulation n'a pas encore démarré ou aucune donnée n'est disponible.</p>
+                <!-- Paramètres de Simulation -->
+                <div class="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-2xl p-6 border border-slate-700/50">
+                    <h2 class="text-xl font-bold mb-4 text-purple-400 flex items-center">
+                        <i class="fas fa-sliders-h mr-3"></i>Simulation
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Algorithme</label>
+                            <select id="algorithm" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <option value="roundrobin">Round Robin Simple</option>
+                                <option value="weighted">Round Robin Pondéré</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">
+                                Paquets/sec: <span id="speedValue" class="text-cyan-400 font-bold">3</span>
+                            </label>
+                            <input type="range" id="packetSpeed" min="1" max="10" value="3" class="w-full accent-purple-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Nombre de paquets</label>
+                            <input type="number" id="totalPackets" value="50" min="10" max="200" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                        
+                        <div class="flex space-x-2">
+                            <button id="startBtn" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 px-4 rounded-lg btn-neon">
+                                <i class="fas fa-play mr-2"></i>Start
+                            </button>
+                            <button id="stopBtn" class="flex-1 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white font-bold py-3 px-4 rounded-lg btn-neon" disabled>
+                                <i class="fas fa-stop mr-2"></i>Stop
+                            </button>
+                        </div>
+                        
+                        <button id="resetBtn" class="w-full bg-gradient-to-r from-gray-600 to-slate-600 hover:from-gray-700 hover:to-slate-700 text-white font-bold py-2 px-4 rounded-lg btn-neon">
+                            <i class="fas fa-redo mr-2"></i>Reset
+                        </button>
+                    </div>
                 </div>
-                 <div id="statsChartContainer" class="mt-4">
-                    <canvas id="statsChartCanvas"></canvas>
+            </div>
+
+            <!-- Zone de Simulation Principale -->
+            <div class="xl:col-span-2">
+                <div class="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-2xl p-6 border border-slate-700/50 h-full">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-cyan-400 flex items-center">
+                            <i class="fas fa-globe mr-3"></i>Topologie SD-WAN
+                        </h2>
+                        <div class="flex items-center space-x-4 text-sm">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                                <span id="packetsSent" class="text-green-400 font-bold">0</span> paquets
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                <span id="statusText" class="text-blue-400">Prêt</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Canvas de simulation agrandi -->
+                    <div class="relative bg-gradient-to-br from-slate-900 to-slate-800 rounded-lg overflow-hidden" style="height: 70vh;">
+                        <canvas id="networkCanvas" class="w-full h-full"></canvas>
+                        <!-- Overlay pour Internet -->
+                        <div id="internetIcon" class="absolute top-4 right-4 text-yellow-400 text-6xl opacity-75">
+                            <i class="fas fa-globe"></i>
+                            <div class="text-xs text-center text-yellow-300 mt-1">Internet</div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </main>
+
+            <!-- Statistiques et Graphiques -->
+            <div class="xl:col-span-1 space-y-6">
+                
+                <!-- Légende des Liens -->
+                <div class="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-2xl p-6 border border-slate-700/50">
+                    <h3 class="text-lg font-bold mb-3 text-yellow-400 flex items-center">
+                        <i class="fas fa-list mr-2"></i>Liens WAN Actifs
+                    </h3>
+                    <div id="linksLegend" class="space-y-2">
+                        <!-- Légende générée dynamiquement -->
+                    </div>
+                </div>
+
+                <!-- Graphique de Répartition -->
+                <div class="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-2xl p-6 border border-slate-700/50">
+                    <h3 class="text-lg font-bold mb-3 text-pink-400 flex items-center">
+                        <i class="fas fa-chart-pie mr-2"></i>Répartition
+                    </h3>
+                    <div class="relative">
+                        <canvas id="distributionChart" width="280" height="280"></canvas>
+                    </div>
+                </div>
+
+                <!-- Statistiques Détaillées -->
+                <div class="bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-2xl p-6 border border-slate-700/50">
+                    <h3 class="text-lg font-bold mb-3 text-green-400 flex items-center">
+                        <i class="fas fa-analytics mr-2"></i>Analyse
+                    </h3>
+                    <div id="detailedStats" class="text-sm space-y-2 max-h-64 overflow-y-auto">
+                        <!-- Statistiques détaillées -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <footer class="bg-gray-800 p-6 mt-auto shadow-lg">
-        <h2 class="text-xl font-semibold text-cyan-400 mb-3">
-            <i class="fas fa-info-circle mr-2"></i>Note Pédagogique
-        </h2>
-        <p class="text-sm text-gray-300 leading-relaxed">
-            <strong>Équilibrage de Charge SD-WAN vs. Équilibrage de Serveurs Classique :</strong>
-        </p>
-        <ul class="list-disc list-inside text-sm text-gray-400 mt-2 space-y-1">
-            <li>
-                L'<strong>équilibrage de charge de serveurs (Load Balancing classique)</strong> répartit les requêtes des utilisateurs (ex: requêtes HTTP) entre plusieurs serveurs d'une même application. L'objectif est d'améliorer la performance et la disponibilité de l'application en évitant la surcharge d'un unique serveur. Cela se passe typiquement au niveau applicatif (Couche 7) ou transport (Couche 4) au sein d'un datacenter ou d'un cluster de serveurs.
-            </li>
-            <li>
-                L'<strong>équilibrage de charge SD-WAN (WAN Load Balancing)</strong>, illustré ici, concerne la répartition du trafic réseau (paquets IP) entre plusieurs liaisons WAN (Internet, MPLS, 4G/5G, etc.) connectant différents sites d'une entreprise (ex: siège et succursales). L'objectif est d'optimiser l'utilisation de la bande passante disponible sur l'ensemble des liens, d'améliorer la résilience (basculement en cas de panne d'un lien), et de choisir le meilleur chemin pour chaque type de trafic en fonction de ses besoins (latence, bande passante). Cela se passe au niveau réseau (Couche 3). On optimise les "tuyaux" entre les sites, pas les serveurs au sein d'un site.
-            </li>
-        </ul>
-    </footer>
+    <!-- Modal d'aide -->
+    <div id="helpModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-cyan-400">Guide SD-WAN - Équilibrage de Charge</h2>
+                    <button id="closeHelpBtn" class="text-gray-400 hover:text-white text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-6 text-gray-300">
+                    <div class="bg-slate-700/50 rounded-lg p-4">
+                        <h3 class="text-xl font-semibold text-orange-400 mb-3">🎯 Concept SD-WAN vs Load Balancing Classique</h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="bg-blue-900/30 rounded-lg p-4">
+                                <h4 class="font-bold text-blue-400 mb-2">SD-WAN (Cette simulation)</h4>
+                                <ul class="text-sm space-y-1">
+                                    <li>• <strong>Équilibrage de liens WAN</strong> entre sites</li>
+                                    <li>• Répartition du trafic sur MPLS, Fibre, 4G/5G</li>
+                                    <li>• Optimisation de la bande passante</li>
+                                    <li>• Redondance et résilience réseau</li>
+                                    <li>• Routage intelligent des paquets</li>
+                                </ul>
+                            </div>
+                            <div class="bg-purple-900/30 rounded-lg p-4">
+                                <h4 class="font-bold text-purple-400 mb-2">Load Balancing Classique</h4>
+                                <ul class="text-sm space-y-1">
+                                    <li>• <strong>Équilibrage de serveurs</strong> dans un datacenter</li>
+                                    <li>• Répartition des requêtes HTTP/HTTPS</li>
+                                    <li>• Optimisation des performances applicatives</li>
+                                    <li>• Haute disponibilité des services</li>
+                                    <li>• Distribution de la charge CPU/RAM</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-700/50 rounded-lg p-4">
+                        <h3 class="text-xl font-semibold text-green-400 mb-3">🚀 Comment utiliser cette simulation</h3>
+                        <ol class="list-decimal list-inside space-y-2 text-sm">
+                            <li><strong>Configuration par défaut :</strong> Cliquez directement sur "Start" pour une démo rapide</li>
+                            <li><strong>Personnalisation :</strong> Ajustez le nombre de sites, liens WAN, algorithmes</li>
+                            <li><strong>Observation :</strong> Regardez les paquets suivre les différents liens colorés</li>
+                            <li><strong>Analyse :</strong> Consultez les statistiques pour valider l'équilibrage</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="bg-slate-700/50 rounded-lg p-4">
+                        <h3 class="text-xl font-semibold text-yellow-400 mb-3">⚙️ Algorithmes disponibles</h3>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <strong class="text-cyan-400">Round Robin Simple :</strong> 
+                                Chaque lien WAN est utilisé à tour de rôle de manière équitable.
+                            </div>
+                            <div>
+                                <strong class="text-orange-400">Round Robin Pondéré :</strong> 
+                                Les liens avec un poids plus élevé reçoivent proportionnellement plus de trafic.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <button id="startDemoBtn" class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-lg btn-neon">
+                        <i class="fas fa-rocket mr-2"></i>Démarrer la Démo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
-    <script src="script.js"></script>
+    <script>
+        // Configuration globale optimisée
+        const CONFIG = {
+            wanPresets: [
+                { name: 'MPLS', color: '#3B82F6', bandwidth: 100, latency: 5, weight: 4, icon: 'fas fa-network-wired' },
+                { name: 'Fibre', color: '#10B981', bandwidth: 1000, latency: 2, weight: 5, icon: 'fas fa-bolt' },
+                { name: '4G/5G', color: '#F59E0B', bandwidth: 50, latency: 20, weight: 2, icon: 'fas fa-signal' },
+                { name: 'Internet', color: '#EF4444', bandwidth: 200, latency: 15, weight: 3, icon: 'fas fa-globe' },
+                { name: 'Satellite', color: '#8B5CF6', bandwidth: 25, latency: 100, weight: 1, icon: 'fas fa-satellite' }
+            ],
+            animation: {
+                packetSpeed: 3,
+                totalPackets: 50,
+                currentPackets: 0
+            },
+            simulation: {
+                isRunning: false,
+                algorithm: 'roundrobin',
+                stats: {},
+                currentLinkIndex: 0,
+                packets: []
+            }
+        };
+
+        // Variables globales
+        let canvas, ctx, chart = null;
+        let sites = [], wanLinks = [], animationId = null, packetInterval = null;
+
+        // Initialisation au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCanvas();
+            initializeEventListeners();
+            createDefaultConfiguration();
+            generateNetwork();
+            updateInterface();
+        });
+
+        // Initialisation du canvas
+        function initializeCanvas() {
+            canvas = document.getElementById('networkCanvas');
+            ctx = canvas.getContext('2d');
+            
+            function resizeCanvas() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                if (sites.length > 0) {
+                    generateNetwork();
+                }
+            }
+            
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+        }
+
+        // Gestionnaires d'événements
+        function initializeEventListeners() {
+            // Configuration réseau
+            document.getElementById('sitesCount').addEventListener('change', function() {
+                generateNetwork();
+                updateInterface();
+            });
+            
+            document.getElementById('hostsCount').addEventListener('change', function() {
+                generateNetwork();
+                updateInterface();
+            });
+            
+            document.getElementById('applyNetworkBtn').addEventListener('click', function() {
+                generateNetwork();
+                updateInterface();
+                showNotification('Configuration réseau appliquée', 'success');
+            });
+
+            // Gestion des liens WAN
+            document.getElementById('addWanLinkBtn').addEventListener('click', addWanLink);
+
+            // Paramètres de simulation
+            document.getElementById('algorithm').addEventListener('change', function() {
+                CONFIG.simulation.algorithm = this.value;
+                updateWanLinksInterface();
+            });
+
+            document.getElementById('packetSpeed').addEventListener('input', function() {
+                CONFIG.animation.packetSpeed = parseInt(this.value);
+                document.getElementById('speedValue').textContent = this.value;
+            });
+
+            document.getElementById('totalPackets').addEventListener('input', function() {
+                CONFIG.animation.totalPackets = parseInt(this.value);
+            });
+
+            // Contrôles de simulation
+            document.getElementById('startBtn').addEventListener('click', startSimulation);
+            document.getElementById('stopBtn').addEventListener('click', stopSimulation);
+            document.getElementById('resetBtn').addEventListener('click', resetSimulation);
+
+            // Modal d'aide
+            document.getElementById('helpBtn').addEventListener('click', () => {
+                document.getElementById('helpModal').classList.remove('hidden');
+            });
+            
+            document.getElementById('closeHelpBtn').addEventListener('click', () => {
+                document.getElementById('helpModal').classList.add('hidden');
+            });
+            
+            document.getElementById('startDemoBtn').addEventListener('click', () => {
+                document.getElementById('helpModal').classList.add('hidden');
+                startSimulation();
+            });
+
+            // Fermer modal en cliquant à l'extérieur
+            document.getElementById('helpModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.add('hidden');
+                }
+            });
+        }
+
+        // Configuration par défaut pour démarrage rapide
+        function createDefaultConfiguration() {
+            wanLinks = [
+                {
+                    id: 'wan1',
+                    ...CONFIG.wanPresets[0], // MPLS
+                    packetsCount: 0
+                },
+                {
+                    id: 'wan2', 
+                    ...CONFIG.wanPresets[1], // Fibre
+                    packetsCount: 0
+                },
+                {
+                    id: 'wan3',
+                    ...CONFIG.wanPresets[2], // 4G/5G
+                    packetsCount: 0
+                }
+            ];
+        }
+
+        // Génération de la topologie réseau
+        function generateNetwork() {
+            const sitesCount = parseInt(document.getElementById('sitesCount').value);
+            const hostsCount = parseInt(document.getElementById('hostsCount').value);
+            
+            sites = [];
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(canvas.width, canvas.height) * 0.25;
+
+            // Génération des sites
+            for (let i = 0; i < sitesCount; i++) {
+                const angle = (i * 2 * Math.PI) / sitesCount;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                
+                const site = {
+                    id: `site${i}`,
+                    name: `Site ${String.fromCharCode(65 + i)}`,
+                    x: x,
+                    y: y,
+                    hosts: []
+                };
+
+                // Génération des hôtes autour du site
+                for (let j = 0; j < hostsCount; j++) {
+                    const hostAngle = (j * 2 * Math.PI) / hostsCount + angle;
+                    const hostRadius = 60;
+                    site.hosts.push({
+                        id: `host${i}_${j}`,
+                        x: x + hostRadius * Math.cos(hostAngle),
+                        y: y + hostRadius * Math.sin(hostAngle)
+                    });
+                }
+                
+                sites.push(site);
+            }
+            
+            drawNetwork();
+        }
+
+        // Dessin de la topologie réseau
+        function drawNetwork() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Dessiner Internet en arrière-plan
+            drawInternet();
+            
+            // Dessiner les liens WAN
+            drawWanLinks();
+            
+            // Dessiner les sites et CPE
+            drawSites();
+            
+            // Dessiner les paquets en mouvement
+            drawPackets();
+        }
+
+        // Dessiner la représentation d'Internet
+        function drawInternet() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(canvas.width, canvas.height) * 0.15;
+            
+            // Nuage Internet stylisé
+            ctx.save();
+            ctx.fillStyle = 'rgba(255, 193, 7, 0.1)';
+            ctx.strokeStyle = 'rgba(255, 193, 7, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Icône Internet
+            ctx.fillStyle = 'rgba(255, 193, 7, 0.6)';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('🌐', centerX, centerY + 8);
+            
+            ctx.fillStyle = 'rgba(255, 193, 7, 0.8)';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('INTERNET', centerX, centerY + 30);
+            
+            ctx.restore();
+        }
+
+        // Dessiner les liens WAN
+        function drawWanLinks() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            sites.forEach((site, siteIndex) => {
+                wanLinks.forEach((link, linkIndex) => {
+                    // Calculer la position du lien avec un offset pour éviter la superposition
+                    const offset = (linkIndex - (wanLinks.length - 1) / 2) * 10;
+                    const startX = site.x;
+                    const startY = site.y + offset;
+                    const endX = centerX;
+                    const endY = centerY + offset;
+                    
+                    // Dessiner le lien avec effet de courbe
+                    ctx.save();
+                    ctx.strokeStyle = link.color;
+                    ctx.lineWidth = 4;
+                    ctx.globalAlpha = 0.7;
+                    
+                    // Ligne courbe
+                    ctx.beginPath();
+                    const controlX = (startX + endX) / 2;
+                    const controlY = (startY + endY) / 2 - 30;
+                    ctx.moveTo(startX, startY);
+                    ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+                    ctx.stroke();
+                    
+                    // Étiquette du lien
+                    ctx.fillStyle = link.color;
+                    ctx.font = 'bold 10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.globalAlpha = 0.9;
+                    ctx.fillText(link.name, controlX, controlY - 5);
+                    
+                    ctx.restore();
+                });
+            });
+        }
+
+        // Dessiner les sites et CPE
+        function drawSites() {
+            sites.forEach((site, index) => {
+                // Dessiner les hôtes
+                site.hosts.forEach(host => {
+                    // Ligne de connexion vers le CPE
+                    ctx.strokeStyle = 'rgba(100, 116, 139, 0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(host.x, host.y);
+                    ctx.lineTo(site.x, site.y);
+                    ctx.stroke();
+                    
+                    // Hôte (PC)
+                    ctx.fillStyle = '#475569';
+                    ctx.beginPath();
+                    ctx.arc(host.x, host.y, 8, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = '#64748b';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
+                
+                // CPE (Customer Premises Equipment)
+                ctx.fillStyle = '#0ea5e9';
+                ctx.beginPath();
+                ctx.arc(site.x, site.y, 20, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#0284c7';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Icône CPE
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('CPE', site.x, site.y + 4);
+                
+                // Nom du site
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText(site.name, site.x, site.y + 40);
+            });
+        }
+
+        // Dessiner les paquets en mouvement
+        function drawPackets() {
+            CONFIG.simulation.packets.forEach(packet => {
+                ctx.save();
+                ctx.fillStyle = packet.color;
+                ctx.shadowColor = packet.color;
+                ctx.shadowBlur = 10;
+                
+                ctx.beginPath();
+                ctx.arc(packet.x, packet.y, 6, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                ctx.restore();
+            });
+        }
+
+        // Animation des paquets
+        function animatePacket(link) {
+            const fromSite = sites[Math.floor(Math.random() * sites.length)];
+            const fromHost = fromSite.hosts[Math.floor(Math.random() * fromSite.hosts.length)];
+            
+            const packet = {
+                id: Date.now() + Math.random(),
+                x: fromHost.x,
+                y: fromHost.y,
+                targetX: canvas.width / 2,
+                targetY: canvas.height / 2,
+                color: link.color,
+                progress: 0,
+                stage: 0, // 0: vers CPE, 1: vers Internet, 2: terminé
+                fromSite: fromSite,
+                fromHost: fromHost,
+                link: link
+            };
+            
+            CONFIG.simulation.packets.push(packet);
+            link.packetsCount++;
+            CONFIG.animation.currentPackets++;
+            
+            // Mettre à jour le compteur
+            document.getElementById('packetsSent').textContent = CONFIG.animation.currentPackets;
+        }
+
+        // Mise à jour des paquets
+        function updatePackets() {
+            CONFIG.simulation.packets = CONFIG.simulation.packets.filter(packet => {
+                packet.progress += 0.02;
+                
+                if (packet.stage === 0) {
+                    // Mouvement vers le CPE
+                    const dx = packet.fromSite.x - packet.fromHost.x;
+                    const dy = packet.fromSite.y - packet.fromHost.y;
+                    packet.x = packet.fromHost.x + dx * packet.progress;
+                    packet.y = packet.fromHost.y + dy * packet.progress;
+                    
+                    if (packet.progress >= 1) {
+                        packet.stage = 1;
+                        packet.progress = 0;
+                        packet.x = packet.fromSite.x;
+                        packet.y = packet.fromSite.y;
+                    }
+                } else if (packet.stage === 1) {
+                    // Mouvement vers Internet
+                    const dx = packet.targetX - packet.fromSite.x;
+                    const dy = packet.targetY - packet.fromSite.y;
+                    packet.x = packet.fromSite.x + dx * packet.progress;
+                    packet.y = packet.fromSite.y + dy * packet.progress;
+                    
+                    if (packet.progress >= 1) {
+                        // Paquet arrivé à destination
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+        }
+
+        // Sélection du lien selon l'algorithme
+        function selectNextLink() {
+            if (wanLinks.length === 0) return null;
+            
+            if (CONFIG.simulation.algorithm === 'roundrobin') {
+                const link = wanLinks[CONFIG.simulation.currentLinkIndex % wanLinks.length];
+                CONFIG.simulation.currentLinkIndex++;
+                return link;
+            } else {
+                // Round Robin Pondéré
+                const totalWeight = wanLinks.reduce((sum, link) => sum + link.weight, 0);
+                let randomWeight = Math.floor(Math.random() * totalWeight);
+                
+                for (let link of wanLinks) {
+                    randomWeight -= link.weight;
+                    if (randomWeight < 0) {
+                        return link;
+                    }
+                }
+                return wanLinks[0];
+            }
+        }
+
+        // Démarrage de la simulation
+        function startSimulation() {
+            if (CONFIG.simulation.isRunning) return;
+            
+            CONFIG.simulation.isRunning = true;
+            CONFIG.animation.currentPackets = 0;
+            CONFIG.simulation.currentLinkIndex = 0;
+            
+            // Reset stats
+            wanLinks.forEach(link => link.packetsCount = 0);
+            CONFIG.simulation.packets = [];
+            
+            // Interface
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('statusText').textContent = 'En cours...';
+            
+            // Animation loop
+            function animate() {
+                if (!CONFIG.simulation.isRunning) return;
+                
+                updatePackets();
+                drawNetwork();
+                updateStatistics();
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            // Génération de paquets
+            packetInterval = setInterval(() => {
+                if (!CONFIG.simulation.isRunning) return;
+                
+                if (CONFIG.animation.currentPackets >= CONFIG.animation.totalPackets) {
+                    if (CONFIG.simulation.packets.length === 0) {
+                        stopSimulation();
+                        showNotification('Simulation terminée !', 'success');
+                    }
+                    return;
+                }
+                
+                const selectedLink = selectNextLink();
+                if (selectedLink) {
+                    animatePacket(selectedLink);
+                }
+            }, 1000 / CONFIG.animation.packetSpeed);
+            
+            animate();
+            showNotification('Simulation démarrée', 'info');
+        }
+
+        // Arrêt de la simulation
+        function stopSimulation() {
+            CONFIG.simulation.isRunning = false;
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            if (packetInterval) {
+                clearInterval(packetInterval);
+                packetInterval = null;
+            }
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('statusText').textContent = 'Arrêtée';
+            
+            updateStatistics(true);
+        }
+
+        // Reset de la simulation
+        function resetSimulation() {
+            stopSimulation();
+            
+            CONFIG.animation.currentPackets = 0;
+            CONFIG.simulation.currentLinkIndex = 0;
+            CONFIG.simulation.packets = [];
+            
+            wanLinks.forEach(link => link.packetsCount = 0);
+            
+            document.getElementById('packetsSent').textContent = '0';
+            document.getElementById('statusText').textContent = 'Prêt';
+            
+            drawNetwork();
+            updateStatistics();
+            
+            showNotification('Simulation remise à zéro', 'info');
+        }
+
+        // Ajout d'un lien WAN
+        function addWanLink() {
+            const presetIndex = wanLinks.length % CONFIG.wanPresets.length;
+            const preset = CONFIG.wanPresets[presetIndex];
+            
+            const newLink = {
+                id: `wan${Date.now()}`,
+                ...preset,
+                packetsCount: 0
+            };
+            
+            wanLinks.push(newLink);
+            updateWanLinksInterface();
+            drawNetwork();
+            
+            showNotification(`Lien ${preset.name} ajouté`, 'success');
+        }
+
+        // Suppression d'un lien WAN
+        function removeWanLink(linkId) {
+            const index = wanLinks.findIndex(link => link.id === linkId);
+            if (index !== -1) {
+                const removedLink = wanLinks.splice(index, 1)[0];
+                updateWanLinksInterface();
+                drawNetwork();
+                updateStatistics();
+                
+                showNotification(`Lien ${removedLink.name} supprimé`, 'warning');
+            }
+        }
+
+        // Mise à jour de l'interface des liens WAN
+        function updateWanLinksInterface() {
+            const container = document.getElementById('wanLinksContainer');
+            const algorithm = CONFIG.simulation.algorithm;
+            
+            container.innerHTML = '';
+            
+            wanLinks.forEach((link, index) => {
+                const linkDiv = document.createElement('div');
+                linkDiv.className = 'bg-slate-700/50 border border-slate-600 rounded-lg p-3';
+                
+                linkDiv.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 rounded-full" style="background-color: ${link.color}"></div>
+                            <span class="font-semibold text-white">${link.name}</span>
+                            <i class="${link.icon} text-gray-400"></i>
+                        </div>
+                        <button onclick="removeWanLink('${link.id}')" class="text-red-400 hover:text-red-300 text-sm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-300">
+                        <div>BP: ${link.bandwidth} Mbps</div>
+                        <div>Latence: ${link.latency}ms</div>
+                    </div>
+                    
+                    ${algorithm === 'weighted' ? `
+                        <div class="mt-2">
+                            <label class="block text-xs text-gray-400 mb-1">Poids:</label>
+                            <input type="range" min="1" max="10" value="${link.weight}" 
+                                   class="w-full accent-cyan-500" 
+                                   onchange="updateLinkWeight('${link.id}', this.value)">
+                            <div class="text-center text-xs text-cyan-400 font-bold">${link.weight}</div>
+                        </div>
+                    ` : ''}
+                `;
+                
+                container.appendChild(linkDiv);
+            });
+            
+            updateLinksLegend();
+        }
+
+        // Mise à jour du poids d'un lien
+        function updateLinkWeight(linkId, weight) {
+            const link = wanLinks.find(l => l.id === linkId);
+            if (link) {
+                link.weight = parseInt(weight);
+                updateWanLinksInterface();
+            }
+        }
+
+        // Mise à jour de la légende
+        function updateLinksLegend() {
+            const container = document.getElementById('linksLegend');
+            container.innerHTML = '';
+            
+            if (wanLinks.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm">Aucun lien WAN configuré</p>';
+                return;
+            }
+            
+            wanLinks.forEach(link => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'flex items-center justify-between p-2 bg-slate-700/30 rounded';
+                
+                legendItem.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 rounded-full" style="background-color: ${link.color}"></div>
+                        <span class="text-sm">${link.name}</span>
+                    </div>
+                    <div class="text-xs text-gray-400">
+                        ${link.packetsCount || 0} paquets
+                    </div>
+                `;
+                
+                container.appendChild(legendItem);
+            });
+        }
+
+        // Mise à jour des statistiques
+        function updateStatistics(final = false) {
+            updateLinksLegend();
+            updateChart();
+            updateDetailedStats(final);
+        }
+
+        // Mise à jour du graphique
+        function updateChart() {
+            const ctx = document.getElementById('distributionChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            if (wanLinks.length === 0) return;
+            
+            const labels = wanLinks.map(link => link.name);
+            const data = wanLinks.map(link => link.packetsCount || 0);
+            const colors = wanLinks.map(link => link.color);
+            
+            chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: colors.map(color => color + '80'),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#e2e8f0',
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Mise à jour des statistiques détaillées
+        function updateDetailedStats(final = false) {
+            const container = document.getElementById('detailedStats');
+            const totalPackets = wanLinks.reduce((sum, link) => sum + (link.packetsCount || 0), 0);
+            
+            if (totalPackets === 0) {
+                container.innerHTML = '<p class="text-gray-500">Aucune donnée disponible</p>';
+                return;
+            }
+            
+            let html = `<div class="mb-3 p-2 bg-slate-700/30 rounded">
+                <div class="text-sm font-semibold text-cyan-400">Résumé Global</div>
+                <div class="text-xs text-gray-300">Total paquets: ${totalPackets}</div>
+            </div>`;
+            
+            // Analyse par lien
+            html += '<div class="space-y-2">';
+            
+            wanLinks.forEach(link => {
+                const count = link.packetsCount || 0;
+                const percentage = totalPackets > 0 ? ((count / totalPackets) * 100).toFixed(1) : 0;
+                
+                let analysis = '';
+                if (CONFIG.simulation.algorithm === 'weighted' && totalPackets > 20) {
+                    const totalWeight = wanLinks.reduce((sum, l) => sum + l.weight, 0);
+                    const expectedPercent = ((link.weight / totalWeight) * 100).toFixed(1);
+                    const difference = Math.abs(percentage - expectedPercent);
+                    
+                    if (difference < 5) {
+                        analysis = `<span class="text-green-400">✓ Conforme (attendu: ${expectedPercent}%)</span>`;
+                    } else {
+                        analysis = `<span class="text-yellow-400">⚠ Écart: ${difference.toFixed(1)}% (attendu: ${expectedPercent}%)</span>`;
+                    }
+                }
+                
+                html += `
+                    <div class="p-2 bg-slate-700/20 rounded text-xs">
+                        <div class="flex items-center justify-between mb-1">
+                            <span style="color: ${link.color}" class="font-semibold">${link.name}</span>
+                            <span class="text-gray-300">${count} (${percentage}%)</span>
+                        </div>
+                        ${analysis ? `<div class="text-xs">${analysis}</div>` : ''}
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            
+            if (final && CONFIG.simulation.algorithm === 'weighted') {
+                const isBalanced = wanLinks.every(link => {
+                    const count = link.packetsCount || 0;
+                    const percentage = totalPackets > 0 ? (count / totalPackets) * 100 : 0;
+                    const totalWeight = wanLinks.reduce((sum, l) => sum + l.weight, 0);
+                    const expectedPercent = (link.weight / totalWeight) * 100;
+                    return Math.abs(percentage - expectedPercent) < 8;
+                });
+                
+                html += `
+                    <div class="mt-3 p-2 rounded ${isBalanced ? 'bg-green-900/30 text-green-400' : 'bg-yellow-900/30 text-yellow-400'}">
+                        <div class="text-xs font-semibold">
+                            ${isBalanced ? '✅ Équilibrage optimal' : '⚠️ Équilibrage à ajuster'}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // Mise à jour générale de l'interface
+        function updateInterface() {
+            updateWanLinksInterface();
+            updateStatistics();
+        }
+
+        // Notification système
+        function showNotification(message, type = 'info') {
+            const colors = {
+                success: 'bg-green-500',
+                warning: 'bg-yellow-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500'
+            };
+            
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Exposition des fonctions globales pour les event handlers inline
+        window.removeWanLink = removeWanLink;
+        window.updateLinkWeight = updateLinkWeight;
+    </script>
 </body>
 </html>
